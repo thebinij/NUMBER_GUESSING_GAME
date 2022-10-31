@@ -11,9 +11,12 @@ USER_DETAIL=$($PSQL "SELECT * FROM users WHERE name = '$USERNAME'")
 if [[ -z $USER_DETAIL ]]
 then
   echo "Welcome, $USERNAME! It looks like this is your first time here."
+  INSERT_USER=$($PSQL "INSERT INTO users(name) VALUES('$USERNAME') ")  
 else
-  echo $USER_DETAIL
-  echo "Welcome back, $USERNAME! You have played 4 games, and your best game took 10 guesses."
+  echo $USER_DETAIL | while IFS='|' read NAME GAME_PLAYED BEST_NO_GUESS
+  do
+  echo "Welcome back, $NAME! You have played $GAME_PLAYED games, and your best game took $BEST_NO_GUESS guesses."
+  done
 fi
 
 NO_OF_GUESSES=0
@@ -39,7 +42,15 @@ START_GAME(){
     # guess must to equal to secret 
     else
       echo "You guessed it in $NO_OF_GUESSES tries. The secret number was $SECRET. Nice job!"
+      # update games played
+      UPDATE_GAME_PLAYED=$($PSQL "UPDATE users SET games_played = games_played +1 WHERE name = '$USERNAME'") 
+      echo $BEST_NO_GUESS 
+      # update best_game if lower than previous
+      if [[ $BEST_NO_GUESS -lt $NO_OF_GUESSES ]]
+      then
+        UPDATE_BEST_GAME=$($PSQL "UPDATE users SET guesses_in_best_game = $NO_OF_GUESSES WHERE name = '$USERNAME'") 
+      fi
     fi
 }
-
+ 
 START_GAME
